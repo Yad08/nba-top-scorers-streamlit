@@ -1,0 +1,233 @@
+import streamlit as st
+import requests
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+
+# Page setup with custom colors
+st.set_page_config(page_title="NBA Top Scorers", page_icon="🏀", layout="wide")
+
+# Custom CSS for styling
+st.markdown("""
+    <style>
+    .main {
+        background-image: url('https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=2090');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+    .main::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(30, 60, 114, 0.85);
+        z-index: -1;
+    }
+    .stButton>button {
+        background-color: #ff6b35;
+        color: white;
+        font-size: 20px;
+        padding: 15px 30px;
+        border-radius: 10px;
+        border: none;
+        font-weight: bold;
+    }
+    .stButton>button:hover {
+        background-color: #ff8555;
+    }
+    h1 {
+        color: white;
+        text-align: center;
+        font-size: 50px;
+        text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+    }
+    h2, h3 {
+        color: white;
+    }
+    .star {
+        color: #ff6b35;
+        font-size: 30px;
+        animation: twinkle 2s infinite;
+    }
+    .title-text {
+        color: #ff6b35;
+        font-size: 48px;
+        text-align: center;
+        margin-top: 20px;
+        animation: twinkle 2s infinite;
+        font-weight: bold;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    @keyframes twinkle {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+    div.row-widget.stButton {
+        text-align: center;
+    }
+    div.row-widget.stButton > button {
+        margin: 0 auto;
+        display: block;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Header with NBA logo
+st.markdown("""
+    <div style='text-align: center;'>
+        <img src='https://cdn.nba.com/logos/leagues/logo-nba.svg' width='200' style='display: block; margin: 0 auto;'>
+        <h1 class='title-text'>Adnan's HackUTA App<br>NBA Top Scorers</h1>
+        <div style='margin-top: 20px;'>
+            <span class='star'>⭐</span> <span class='star'>⭐</span> <span class='star'>⭐</span> <span class='star'>⭐</span> <span class='star'>⭐</span>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
+
+# Function to get NBA data
+def get_nba_scorers():
+    url = "https://stats.nba.com/stats/leagueLeaders"
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0',
+        'Referer': 'https://www.nba.com/'
+    }
+    
+    params = {
+        'LeagueID': '00',
+        'PerMode': 'PerGame',
+        'Season': '2024-25',
+        'SeasonType': 'Regular Season',
+        'StatCategory': 'PTS'
+    }
+    
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json()
+    
+    columns = data['resultSet']['headers']
+    rows = data['resultSet']['rowSet']
+    df = pd.DataFrame(rows, columns=columns)
+    return df
+
+# Center the button
+st.markdown("<br>", unsafe_allow_html=True)
+load_button = st.button("🔥 LOAD TOP 10 SCORERS 🔥")
+
+if load_button:
+    with st.spinner("Getting data..."):
+        try:
+            df = get_nba_scorers()
+            top10 = df.head(10)
+            
+            # Top 3 with styled metrics
+            st.markdown("---")
+            st.subheader("🏆 PODIUM - TOP 3 SCORERS 🏆")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            # Function to get player headshot
+            def get_player_image(player_id):
+                return f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
+            
+            # Gold medal - 1st place
+            with col1:
+                player_id = top10.iloc[0]['PLAYER_ID']
+                st.image(get_player_image(player_id), use_column_width=True)
+                st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, #FFD700, #FFA500); 
+                                padding: 30px; border-radius: 15px; text-align: center;
+                                box-shadow: 0 8px 16px rgba(0,0,0,0.3);'>
+                        <h1 style='color: #000; margin: 0;'>🥇</h1>
+                        <h2 style='color: #000; margin: 10px 0;'>{top10.iloc[0]['PLAYER']}</h2>
+                        <h1 style='color: #000; margin: 0;'>{top10.iloc[0]['PTS']:.1f}</h1>
+                        <p style='color: #000; font-size: 20px; margin: 0;'>PPG</p>
+                        <p style='color: #000; font-size: 18px; margin-top: 10px;'>{top10.iloc[0]['TEAM']}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            # Silver medal - 2nd place
+            with col2:
+                player_id = top10.iloc[1]['PLAYER_ID']
+                st.image(get_player_image(player_id), use_column_width=True)
+                st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, #C0C0C0, #808080); 
+                                padding: 30px; border-radius: 15px; text-align: center;
+                                box-shadow: 0 8px 16px rgba(0,0,0,0.3);'>
+                        <h1 style='color: #000; margin: 0;'>🥈</h1>
+                        <h2 style='color: #000; margin: 10px 0;'>{top10.iloc[1]['PLAYER']}</h2>
+                        <h1 style='color: #000; margin: 0;'>{top10.iloc[1]['PTS']:.1f}</h1>
+                        <p style='color: #000; font-size: 20px; margin: 0;'>PPG</p>
+                        <p style='color: #000; font-size: 18px; margin-top: 10px;'>{top10.iloc[1]['TEAM']}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            # Bronze medal - 3rd place
+            with col3:
+                player_id = top10.iloc[2]['PLAYER_ID']
+                st.image(get_player_image(player_id), use_column_width=True)
+                st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, #CD7F32, #8B4513); 
+                                padding: 30px; border-radius: 15px; text-align: center;
+                                box-shadow: 0 8px 16px rgba(0,0,0,0.3);'>
+                        <h1 style='color: #fff; margin: 0;'>🥉</h1>
+                        <h2 style='color: #fff; margin: 10px 0;'>{top10.iloc[2]['PLAYER']}</h2>
+                        <h1 style='color: #fff; margin: 0;'>{top10.iloc[2]['PTS']:.1f}</h1>
+                        <p style='color: #fff; font-size: 20px; margin: 0;'>PPG</p>
+                        <p style='color: #fff; font-size: 18px; margin-top: 10px;'>{top10.iloc[2]['TEAM']}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("---")
+            
+            # Bar chart for all top 10
+            st.subheader("📊 TOP 10 COMPARISON")
+            fig = go.Figure(data=[
+                go.Bar(
+                    x=top10['PLAYER'],
+                    y=top10['PTS'],
+                    marker=dict(
+                        color=top10['PTS'],
+                        colorscale='Reds',
+                        showscale=True,
+                        colorbar=dict(title="PPG")
+                    ),
+                    text=top10['PTS'].round(1),
+                    textposition='outside',
+                )
+            ])
+            
+            fig.update_layout(
+                title="Points Per Game",
+                xaxis_title="Player",
+                yaxis_title="Points Per Game",
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white', size=14),
+                height=500
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Full table
+            st.subheader("📋 COMPLETE RANKINGS")
+            
+            display_df = top10[['RANK', 'PLAYER', 'TEAM', 'PTS', 'REB', 'AST']].copy()
+            display_df.columns = ['Rank', 'Player', 'Team', 'Points', 'Rebounds', 'Assists']
+            display_df['Points'] = display_df['Points'].round(1)
+            display_df['Rebounds'] = display_df['Rebounds'].round(1)
+            display_df['Assists'] = display_df['Assists'].round(1)
+            
+            st.dataframe(display_df, hide_index=True, use_container_width=True)
+            
+            st.success("✅ Data loaded successfully!")
+            
+        except Exception as e:
+            st.error(f"Error loading data: {e}")
+else:
+    st.markdown("""
+        <div style='text-align: center; padding: 50px;'>
+            <h2 style='color: white;'>👆 Click the button above to see the NBA's hottest scorers! 🔥</h2>
+        </div>
+    """, unsafe_allow_html=True)
